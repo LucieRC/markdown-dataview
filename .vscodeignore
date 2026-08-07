@@ -1,0 +1,14 @@
+.vscode/**
+src/**
+node_modules/**
+dist/test/**
+test/**
+tsconfig.json
+esbuild.js
+esbuild-preview.js
+esbuild-notebook.js
+.gitignore
+.vscodeignore
+README.md
+images/**
+!images/icon.png

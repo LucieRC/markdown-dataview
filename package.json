@@ -1,0 +1,122 @@
+{
+  "name": "markdown-dataview",
+  "displayName": "Dataview — Query Your Notes",
+  "description": "Bring Obsidian Dataview to VS Code. Query Markdown notes with DQL (TABLE, LIST, TASK, CALENDAR), inline expressions, and DataviewJS — right in the built-in preview.",
+  "version": "1.0.0",
+  "publisher": "walkeemon",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/demonstan/markdown-dataview"
+  },
+  "icon": "images/icon.png",
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "markdown",
+    "dataview",
+    "obsidian",
+    "query",
+    "notes"
+  ],
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "main": "./dist/extension.js",
+  "contributes": {
+    "markdown.markdownItPlugins": true,
+    "markdown.previewScripts": [
+      "./dist/preview.js"
+    ],
+    "markdown.previewStyles": [
+      "./dist/preview.css"
+    ],
+    "configuration": {
+      "title": "Dataview",
+      "properties": {
+        "dataview.enableJavascript": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable DataviewJS execution in the Markdown preview. WARNING: This runs arbitrary JavaScript from your notes. Only enable if you trust the content of your workspace."
+        },
+        "dataview.enableInlineQueries": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inline Dataview expressions (e.g., `= this.file.name`)."
+        },
+        "dataview.defaultDateFormat": {
+          "type": "string",
+          "default": "yyyy-MM-dd",
+          "description": "Default date format for Dataview queries."
+        },
+        "dataview.defaultDateTimeFormat": {
+          "type": "string",
+          "default": "yyyy-MM-dd HH:mm",
+          "description": "Default date-time format for Dataview queries."
+        },
+        "dataview.taskEmojis": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable parsing of task emoji shorthands (e.g., 🗓️YYYY-MM-DD for due dates)."
+        },
+        "dataview.excludedFolders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "node_modules",
+            ".git",
+            ".vscode"
+          ],
+          "description": "Folders to exclude from Dataview indexing."
+        },
+        "dataview.warnOnEmptyResult": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a warning in the preview when a query returns no results."
+        },
+        "dataview.javascriptTrustedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Folder paths trusted for DataviewJS execution. Files in these folders can run JavaScript without warning. Leave empty to trust all files when enableJavascript is true."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "dataview.reindex",
+        "title": "Dataview: Re-index workspace"
+      },
+      {
+        "command": "dataview.showIndexStats",
+        "title": "Dataview: Show index statistics"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "npm run check-types && node esbuild.js && node esbuild-preview.js",
+    "check-types": "tsc --noEmit",
+    "watch": "node esbuild.js --watch & node esbuild-preview.js --watch & node esbuild-notebook.js --watch",
+    "package": "npx @vscode/vsce package",
+    "pretest": "npm run check-types",
+    "test": "node --test dist/test/**/*.test.js",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.24.x",
+    "typescript": "^5.5.x"
+  }
+}

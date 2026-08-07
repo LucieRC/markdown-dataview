@@ -1,0 +1,355 @@
+/**
+ * Preview Styles for Dataview Markdown Preview Extension
+ */
+
+/* ─── Container ─────────────────────────────────────────── */
+
+.dataview-result {
+  margin: 1em 0;
+  padding: 0;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: var(--vscode-editor-font-size, 13px);
+}
+
+/* ─── Table ─────────────────────────────────────────────── */
+
+.dataview-table-wrapper {
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.dataview-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--vscode-editor-background, #1e1e1e);
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dataview-table thead {
+  background: var(--vscode-toolbar-hoverBackground, #2a2d2e);
+}
+
+.dataview-table th {
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--vscode-panel-border, #3c3c3c);
+  white-space: nowrap;
+}
+
+.dataview-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+  vertical-align: top;
+}
+
+.dataview-table tbody tr:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.dataview-table tbody tr:nth-child(even) {
+  background: var(--vscode-list-inactiveSelectionBackground, #37373d);
+}
+
+.dataview-table tbody tr:nth-child(even):hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.dataview-col-file {
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+/* ─── Group Headers ──────────────────────────────────────── */
+
+.dataview-group {
+  margin: 1em 0;
+}
+
+.dataview-group-header {
+  margin: 0.75em 0 0.25em 0;
+  font-size: 1.05em;
+  font-weight: 600;
+  color: var(--vscode-textLink-foreground, #3794ff);
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+  padding-bottom: 4px;
+}
+
+/* ─── List ───────────────────────────────────────────────── */
+
+.dataview-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5em 0;
+}
+
+.dataview-list-item {
+  padding: 4px 0 4px 20px;
+  position: relative;
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+}
+
+.dataview-list-item::before {
+  content: '•';
+  position: absolute;
+  left: 4px;
+  color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.dataview-list-file {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.dataview-list-value {
+  color: var(--vscode-descriptionForeground, #999);
+  margin-left: 4px;
+}
+
+/* ─── Task List ──────────────────────────────────────────── */
+
+.dataview-task-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5em 0;
+}
+
+.dataview-task {
+  padding: 4px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
+}
+
+.dataview-task input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.dataview-task-completed .dataview-task-text {
+  text-decoration: line-through;
+  color: var(--vscode-descriptionForeground, #999);
+}
+
+.dataview-task-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.dataview-task-due,
+.dataview-task-scheduled,
+.dataview-task-start {
+  font-size: 0.85em;
+  color: var(--vscode-descriptionForeground, #999);
+  white-space: nowrap;
+}
+
+.dataview-task-file {
+  font-size: 0.85em;
+  color: var(--vscode-textPreformat-foreground, #999);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* ─── Calendar ───────────────────────────────────────────── */
+
+.dataview-calendar-container {
+  margin: 1em 0;
+}
+
+.dataview-calendar-month {
+  margin-bottom: 1.5em;
+}
+
+.dataview-calendar-month-title {
+  margin: 0.5em 0;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--vscode-textLink-foreground, #3794ff);
+}
+
+.dataview-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background: var(--vscode-panel-border, #3c3c3c);
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dataview-calendar-day-header {
+  padding: 6px 4px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.8em;
+  background: var(--vscode-toolbar-hoverBackground, #2a2d2e);
+  color: var(--vscode-descriptionForeground, #999);
+}
+
+.dataview-calendar-day {
+  min-height: 60px;
+  padding: 4px;
+  background: var(--vscode-editor-background, #1e1e1e);
+  font-size: 0.85em;
+}
+
+.dataview-calendar-day-empty {
+  background: var(--vscode-editorWidget-background, #252526);
+}
+
+.dataview-calendar-day-outside-range {
+  opacity: 0.4;
+}
+
+.dataview-calendar-day-today {
+  background: var(--vscode-editor-selectionBackground, #264f78);
+}
+
+.dataview-calendar-day-today .dataview-calendar-day-number {
+  color: var(--vscode-textLink-foreground, #3794ff);
+  font-weight: 700;
+}
+
+.dataview-calendar-day-number {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.dataview-calendar-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.dataview-calendar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--vscode-textLink-foreground, #3794ff);
+  display: inline-block;
+}
+
+.dataview-calendar-more {
+  font-size: 0.7em;
+  color: var(--vscode-descriptionForeground, #999);
+}
+
+/* ─── Links ──────────────────────────────────────────────── */
+
+.dataview-link {
+  color: var(--vscode-textLink-foreground, #3794ff);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dataview-link:hover {
+  text-decoration: underline;
+  color: var(--vscode-textLink-activeForeground, #3794ff);
+}
+
+/* ─── Value Display ──────────────────────────────────────── */
+
+.dataview-null {
+  color: var(--vscode-descriptionForeground, #999);
+  font-style: italic;
+}
+
+.dataview-number {
+  color: var(--vscode-debugTokenExpression-number, #b5cea8);
+}
+
+.dataview-boolean {
+  color: var(--vscode-debugTokenExpression-boolean, #4e94ce);
+}
+
+.dataview-date {
+  color: var(--vscode-debugTokenExpression-string, #ce9178);
+}
+
+.dataview-duration {
+  color: var(--vscode-debugIcon-continueForeground, #75beff);
+}
+
+/* ─── Inline Expressions ─────────────────────────────────── */
+
+.dataview-inline {
+  background: var(--vscode-textBlockQuote-background, #2a2d2e);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+}
+
+.dataview-inline-error {
+  background: var(--vscode-inputValidation-errorBackground, #5a1d1d);
+  color: var(--vscode-inputValidation-errorForeground, #f44747);
+}
+
+/* ─── Error & Empty ──────────────────────────────────────── */
+
+.dataview-error {
+  background: var(--vscode-inputValidation-errorBackground, #5a1d1d);
+  color: var(--vscode-inputValidation-errorForeground, #f44747);
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--vscode-inputValidation-errorBorder, #be1100);
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.dataview-error pre {
+  margin: 8px 0 0 0;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.dataviewjs-warning {
+  background: var(--vscode-inputValidation-warningBackground, #5a4d1d);
+  color: var(--vscode-inputValidation-warningForeground, #e8c72e);
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--vscode-inputValidation-warningBorder, #be8700);
+  font-size: 0.85em;
+  margin-bottom: 8px;
+}
+
+.dataviewjs-warning code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.dataview-empty {
+  color: var(--vscode-descriptionForeground, #999);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* ─── Inline Field Values (from [key:: value] syntax) ───────── */
+
+.dataview-inline-field {
+  background: var(--vscode-textBlockQuote-background, #2a2d2e);
+  color: var(--vscode-debugTokenExpression-string, #ce9178);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+/* ─── Result Count ───────────────────────────────────────── */
+
+.dataview-result-count {
+  font-size: 0.8em;
+  color: var(--vscode-descriptionForeground, #999);
+  margin-top: 4px;
+  text-align: right;
+}
