@@ -4,7 +4,7 @@
  */
 
 import matter from 'gray-matter';
-import { SLink, SDate, SDuration, DataValue, STask, PageMetadata } from './types';
+import { SLink, SDate, SDuration, DataValue, STask, PageMetadata, formatLocalISO, formatLocalDate } from './types';
 
 // ─── Regex Patterns ──────────────────────────────────────────────
 
@@ -65,10 +65,9 @@ function makeLink(path: string, display?: string, subpath?: string, embed = fals
 
 /** Create an SDate from a timestamp (milliseconds) */
 function makeDate(ts: number): SDate {
-  const d = new Date(ts);
   return {
     type: 'date',
-    value: d.toISOString(),
+    value: formatLocalISO(ts),
     ts,
   };
 }
@@ -79,7 +78,7 @@ function makeDateOnly(ts: number): SDate {
   d.setHours(0, 0, 0, 0);
   return {
     type: 'date',
-    value: d.toISOString().split('T')[0],
+    value: formatLocalDate(ts),
     ts: d.getTime(),
   };
 }
@@ -424,7 +423,7 @@ export function parseMarkdownPage(
       parseInt(dayMatch[3])
     );
     if (!isNaN(d.getTime())) {
-      fileDay = { type: 'date', value: d.toISOString().split('T')[0], ts: d.getTime() };
+      fileDay = { type: 'date', value: formatLocalDate(d.getTime()), ts: d.getTime() };
     }
   }
 
@@ -475,7 +474,7 @@ function processYamlValue(val: unknown): DataValue {
     const d = val as Date;
     return {
       type: 'date',
-      value: d.toISOString(),
+      value: formatLocalISO(d.getTime()),
       ts: d.getTime(),
     };
   }

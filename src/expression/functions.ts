@@ -8,6 +8,8 @@ import {
   SDate,
   SDuration,
   SLink,
+  formatLocalISO,
+  formatLocalDate,
 } from '../indexer/types';
 import {
   EvalContext,
@@ -38,7 +40,7 @@ register('date', (args) => {
   if (typeof arg === 'string' || typeof arg === 'number') {
     const d = new Date(typeof arg === 'string' ? arg : arg);
     if (!isNaN(d.getTime())) {
-      return { type: 'date', value: d.toISOString(), ts: d.getTime() } as SDate;
+      return { type: 'date', value: formatLocalISO(d.getTime()), ts: d.getTime() } as SDate;
     }
   }
   return null;
@@ -479,7 +481,7 @@ register('dateadd', (args) => {
   if (isDate(d) && isDuration(dur)) {
     const newTs = (d as SDate).ts + (dur as SDuration).value;
     const nd = new Date(newTs);
-    return { type: 'date', value: nd.toISOString(), ts: newTs } as SDate;
+    return { type: 'date', value: formatLocalISO(newTs), ts: newTs } as SDate;
   }
   return null;
 });
@@ -489,7 +491,7 @@ register('datestart', (args) => {
   if (isDate(d)) {
     const nd = new Date((d as SDate).ts);
     nd.setHours(0, 0, 0, 0);
-    return { type: 'date', value: nd.toISOString().split('T')[0], ts: nd.getTime() } as SDate;
+    return { type: 'date', value: formatLocalDate(nd.getTime()), ts: nd.getTime() } as SDate;
   }
   return null;
 });
@@ -499,28 +501,28 @@ register('dateend', (args) => {
   if (isDate(d)) {
     const nd = new Date((d as SDate).ts);
     nd.setHours(23, 59, 59, 999);
-    return { type: 'date', value: nd.toISOString(), ts: nd.getTime() } as SDate;
+    return { type: 'date', value: formatLocalISO(nd.getTime()), ts: nd.getTime() } as SDate;
   }
   return null;
 });
 
 register('now', () => {
   const d = new Date();
-  return { type: 'date', value: d.toISOString(), ts: d.getTime() } as SDate;
+  return { type: 'date', value: formatLocalISO(d.getTime()), ts: d.getTime() } as SDate;
 });
 
 register('tomorrow', () => {
   const d = new Date();
   d.setDate(d.getDate() + 1);
   d.setHours(0, 0, 0, 0);
-  return { type: 'date', value: d.toISOString().split('T')[0], ts: d.getTime() } as SDate;
+  return { type: 'date', value: formatLocalDate(d.getTime()), ts: d.getTime() } as SDate;
 });
 
 register('yesterday', () => {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   d.setHours(0, 0, 0, 0);
-  return { type: 'date', value: d.toISOString().split('T')[0], ts: d.getTime() } as SDate;
+  return { type: 'date', value: formatLocalDate(d.getTime()), ts: d.getTime() } as SDate;
 });
 
 register('durformat', (args) => {
