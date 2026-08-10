@@ -138,7 +138,10 @@ function renderLink(link: any, fallback: string): string {
 }
 
 function relativePath(currentPage: string, target: string): string {
-  const currentDir = currentPage.replace(/[/\\][^/\\]*$/, '');
+  // dirname, handling root-level files (no slash → '')
+  const normalized = currentPage.replace(/\\/g, '/');
+  const idx = normalized.lastIndexOf('/');
+  const currentDir = idx === -1 ? '' : normalized.slice(0, idx);
   if (!currentDir) return target;
   const currentParts = currentDir.split('/');
   const targetParts = target.split('/');

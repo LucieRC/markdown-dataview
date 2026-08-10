@@ -193,6 +193,7 @@ let currentDataviewJSContainer: HTMLElement | null = null;
 
 function createDataviewAPI(config: DataviewJSConfig): any {
   const pages = config.pages || [];
+  const currentPage = config.currentPage || '';
 
   return {
     /** Get all pages matching optional source */
@@ -238,7 +239,7 @@ function createDataviewAPI(config: DataviewJSConfig): any {
       for (const row of rows) {
         html += '<tr>';
         for (const cell of row) {
-          html += `<td>${renderDvValue(cell)}</td>`;
+          html += `<td>${renderDvValue(cell, currentPage)}</td>`;
         }
         html += '</tr>';
       }
@@ -256,7 +257,7 @@ function createDataviewAPI(config: DataviewJSConfig): any {
 
       let html = '<ul class="dataview-list">';
       for (const val of values) {
-        html += `<li>${renderDvValue(val)}</li>`;
+        html += `<li>${renderDvValue(val, currentPage)}</li>`;
       }
       html += '</ul>';
 
@@ -448,31 +449,48 @@ function formatValue(val: any): string {
 
 
 /** Render a value as HTML for dv.table() / dv.list() output, with clickable links */
-function renderDvValue(val: any): string {
+function renderDvValue(val: any, currentPage: string = ''): string {
   if (val === null || val === undefined) return '<span class="dataview-null">-</span>';
   if (typeof val === 'number') return `<span class="dataview-number">${val}</span>`;
   if (typeof val === 'boolean') return `<span class="dataview-boolean">${val}</span>`;
 
   if (typeof val === 'object' && val !== null) {
     if (val.type === 'link') {
-      const href = val.path || '';
-      const display = val.display || val.path || '';
-      return `<a class="dataview-link" href="${escapeHtml(href)}">${escapeHtml(display)}</a>`;
+      const path = val.path || '';
+      const href = currentPage ? relativePath(currentPage, path) : path;
+      const display = val.display || path || '';
+      return `<a class="dataview-link" href="${escapeHtml(href)}" title="${escapeHtml(path)}">${escapeHtml(display)}</a>`;
     }
     if (val.type === 'date') {
       return `<span class="dataview-date">${escapeHtml(val.value || '')}</span>`;
     }
     if (val.file?.name) {
-      const href = val.file.path || '';
-      return `<a class="dataview-link" href="${escapeHtml(href)}">${escapeHtml(val.file.name)}</a>`;
+      const path = val.file.path || '';
+      const href = currentPage ? relativePath(currentPage, path) : path;
+      return `<a class="dataview-link" href="${escapeHtml(href)}" title="${escapeHtml(path)}">${escapeHtml(val.file.name)}</a>`;
     }
   }
 
   if (Array.isArray(val)) {
-    return val.map(renderDvValue).join(', ');
+    return val.map((v) => renderDvValue(v, currentPage)).join(', ');
   }
 
   return escapeHtml(String(val));
+}
+
+/** Compute a relative href from currentPage to target (workspace-relative paths). */
+function relativePath(currentPage: string, target: string): string {
+  const normalized = currentPage.replace(/\\/g, '/');
+  const idx = normalized.lastIndexOf('/');
+  const currentDir = idx === -1 ? '' : normalized.slice(0, idx);
+  if (!currentDir) return target;
+  const currentParts = currentDir.split('/');
+  const targetParts = target.split('/');
+  let i = 0;
+  while (i < currentParts.length && i < targetParts.length && currentParts[i] === targetParts[i]) i++;
+  const ups = currentParts.length - i;
+  const downs = targetParts.slice(i);
+  return ups > 0 ? '../'.repeat(ups) + downs.join('/') : './' + downs.join('/');
 }
 
 function parseDuration(raw: string): number {

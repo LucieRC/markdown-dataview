@@ -175,7 +175,10 @@ function renderLink(link: any, fallback: string): string {
 
 /** Compute relative path from currentPage (e.g. "test/04-Projects/README.md") to target */
 function relativePath(currentPage: string, target: string): string {
-  const currentDir = currentPage.replace(/[/\\][^/\\]*$/, ''); // dirname
+  // dirname, handling root-level files (no slash → '')
+  const normalized = currentPage.replace(/\\/g, '/');
+  const idx = normalized.lastIndexOf('/');
+  const currentDir = idx === -1 ? '' : normalized.slice(0, idx);
   if (!currentDir) return target;
   const currentParts = currentDir.split('/');
   const targetParts = target.split('/');
