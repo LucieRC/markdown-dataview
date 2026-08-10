@@ -28,6 +28,17 @@ export class QueryParser {
       clean = lines.join('\n').trim();
     }
 
+    // Normalize single-line queries: insert newlines before clauses
+    // so they can be parsed as separate lines. This handles:
+    //   LIST FROM "notes"  →  LIST \n FROM "notes"
+    //   TABLE ... FROM ... WHERE ... SORT ... LIMIT ...
+    clean = clean.replace(/\s+(FROM\s)/gi, '\n$1');
+    clean = clean.replace(/\s+(WHERE\s)/gi, '\n$1');
+    clean = clean.replace(/\s+(SORT\s)/gi, '\n$1');
+    clean = clean.replace(/\s+(GROUP\s+BY\s)/gi, '\n$1');
+    clean = clean.replace(/\s+(FLATTEN\s)/gi, '\n$1');
+    clean = clean.replace(/\s+(LIMIT\s)/gi, '\n$1');
+
     this.lines = clean.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     this.pos = 0;
 
@@ -83,7 +94,7 @@ export class QueryParser {
       // Remove the type keyword and WITHOUT ID from parsing
       let columnStr = firstLine
         .replace(/^TABLE\s*/i, '')
-        .replace(/\s*WITHOUT\s+ID\s*$/i, '')
+        .replace(/\bWITHOUT\s+ID\b/i, '')
         .trim();
 
       if (columnStr.length > 0) {
@@ -93,7 +104,7 @@ export class QueryParser {
       // LIST can have one optional extra field
       let extraStr = firstLine
         .replace(/^LIST\s*/i, '')
-        .replace(/\s*WITHOUT\s+ID\s*$/i, '')
+        .replace(/\bWITHOUT\s+ID\b/i, '')
         .trim();
 
       if (extraStr.length > 0 && !extraStr.toUpperCase().startsWith('FROM') && !extraStr.toUpperCase().startsWith('WHERE')) {

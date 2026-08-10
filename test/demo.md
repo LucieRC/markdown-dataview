@@ -51,6 +51,10 @@ This field is completely hidden in the preview: (hidden-note:: This is a hidden 
 
 More hidden fields: (internal-id:: DWV-001) (cache-ttl:: 3600)
 
+### Wikilinks `[[target|display]]`
+
+Link to another note: [[projects/project-alpha|Project Alpha]] — clickable in preview.
+
 ---
 
 ## 3. TABLE Queries
@@ -67,7 +71,7 @@ SORT file.ctime DESC
 
 ```dataview
 TABLE file.name AS "Name", status, priority
-FROM "test/projects"
+FROM "projects"
 SORT file.name ASC
 ```
 
@@ -76,7 +80,7 @@ SORT file.name ASC
 ```dataview
 TABLE file.name, budget, deadline, status
 FROM #project
-WHERE budget > 50000
+WHERE budget > 100000
 SORT budget DESC
 ```
 
@@ -91,7 +95,7 @@ FROM #project
 
 ```dataview
 TABLE WITHOUT ID file.link AS "Link", status AS "Status", priority AS "Priority"
-FROM "test/projects"
+FROM "projects"
 ```
 
 ### 3.6 TABLE — Using contains / regexmatch
@@ -137,7 +141,7 @@ FLATTEN team
 TABLE file.name, budget
 FROM #project
 SORT budget DESC
-LIMIT 3
+LIMIT 1
 ```
 
 ---
@@ -147,7 +151,7 @@ LIMIT 3
 ### 7.1 Basic LIST
 
 ```dataview
-LIST FROM "test/notes"
+LIST FROM "notes"
 ```
 
 ### 7.2 LIST — By Tag

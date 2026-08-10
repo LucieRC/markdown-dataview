@@ -20,6 +20,11 @@ const MDLINK_RE = /\[([^\]]*)\]\(([^)]+)\)/g;
 /** Matches tags: #tag, #tag/subtag (not inside code blocks or URLs) */
 const TAG_RE = /(?:^|\s)#([a-zA-Z\u4e00-\u9fff_/][a-zA-Z0-9\u4e00-\u9fff_/-]*)/g;
 
+/** Strip fenced code blocks from text to avoid false tag/link extraction */
+function stripCodeBlocks(text: string): string {
+  return text.replace(/```[\s\S]*?```/g, '');
+}
+
 /** Matches inline fields: Key:: Value or [Key:: Value] or (Key:: Value) */
 const INLINE_FIELD_STANDALONE_RE = /^\s*([\w\u4e00-\u9fff][\w\s\u4e00-\u9fff-]*)::\s*(.+)$/;
 
@@ -356,8 +361,8 @@ export function parseMarkdownPage(
   const inlineFields = parseInlineFields(body);
   Object.assign(frontmatter, inlineFields);
 
-  // Extract tags from full content (frontmatter + body)
-  const { tags, etags } = extractTags(content);
+  // Extract tags from content (excluding code blocks to avoid false positives)
+  const { tags, etags } = extractTags(stripCodeBlocks(content));
 
   // Also extract tags from frontmatter `tags` field
   if (frontmatter['tags']) {

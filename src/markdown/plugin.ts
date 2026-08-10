@@ -72,30 +72,68 @@ export function createDataviewPlugin(
       return '';
     }
 
-    // ─── Inline field rendering ───────────────────────────────
-    // [key:: value] → show only "value" styled as inline data
-    // (key:: value) → completely hidden
+    // ─── Wikilink rendering ────────────────────────────────
+    // [[target]], [[target|display]], [[target#heading|display]]
 
-    const inlineFieldRe = /^\[([\w\u4e00-\u9fff][\w\s\u4e00-\u9fff-]*)::\s*([^\]]+)\]/;
-    const hiddenFieldRe = /^\(([\w\u4e00-\u9fff][\w\s\u4e00-\u9fff-]*)::\s*([^)]+)\)/;
+    const wikilinkRe = /^\[\[([^\]|#]+)(?:#([^\]|]*))?(?:\|([^\]]*))?\]\]/;
 
-    md.inline.ruler.before('escape', 'dataview_bracketed_field', (state: any, silent: boolean) => {
-      const match = state.src.slice(state.pos).match(inlineFieldRe);
+    md.inline.ruler.before('escape', 'dataview_wikilink', (state: any, silent: boolean) => {
+      const match = state.src.slice(state.pos).match(wikilinkRe);
       if (!match) return false;
+
       if (!silent) {
+        const target = match[1].trim();
+        const heading = match[2]?.trim() || '';
+        const display = match[3]?.trim() || target;
+
+        // Build file path: append .md if no extension
+        let filePath = target;
+        if (!filePath.includes('.')) {
+          filePath += '.md';
+        }
+
+        // Compute relative href from the current page
+        const href = resolveWikilinkHref(filePath, state.env);
+
         const token = state.push('html_inline', '', 0);
-        token.content = '<span class="dataview-inline-field">' + escapeHtmlInline(match[2].trim()) + '</span>';
+        token.content = '<a class="dataview-wikilink" href="' +
+          escapeHtmlAttr(href) +
+          '" title="' + escapeHtmlAttr(target) + '">' +
+          escapeHtmlInline(display) + '</a>';
       }
       state.pos += match[0].length;
       return true;
     });
 
-    md.inline.ruler.before('escape', 'dataview_hidden_field', (state: any, silent: boolean) => {
-      const match = state.src.slice(state.pos).match(hiddenFieldRe);
+    // ─── Inline field rendering ───────────────────────────────
+    // [key:: value] → show both key and value
+    // (key:: value) → show only value (key hidden) — handled via core rule
+
+    const inlineFieldRe = /^\[([\w\u4e00-\u9fff][\w\s\u4e00-\u9fff-]*)::\s*([^\]]+)\]/;
+    const hiddenFieldGlobalRe = /\(([\w\u4e00-\u9fff][\w\s\u4e00-\u9fff-]*)::\s*([^)]+)\)/g;
+
+    md.inline.ruler.before('escape', 'dataview_bracketed_field', (state: any, silent: boolean) => {
+      const match = state.src.slice(state.pos).match(inlineFieldRe);
       if (!match) return false;
-      // Hidden field: consume the input but produce no output
+      if (!silent) {
+        const key = match[1].trim();
+        const value = match[2].trim();
+        const token = state.push('html_inline', '', 0);
+        token.content = '<span class="dataview-inline-field">' +
+          '<span class="dataview-inline-key">' + escapeHtmlInline(key) + ':: </span>' +
+          escapeHtmlInline(value) + '</span>';
+      }
       state.pos += match[0].length;
       return true;
+    });
+
+    // Hidden fields (key:: value) are handled by a core rule that
+    // post-processes text tokens, since inline rules for `(` are
+    // unreliable due to markdown-it's parser internals.
+    md.core.ruler.push('dataview_hidden_fields', (state: any) => {
+      const tokens = state.tokens;
+      processInlineTokensForHiddenFields(tokens, hiddenFieldGlobalRe);
+      return state;
     });
 
     // ─── Fence rendering ─────────────────────────────────────
@@ -453,4 +491,123 @@ function escapeHtmlInline(str: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+/** Escape a string for use in an HTML attribute value */
+function escapeHtmlAttr(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * Resolve a wikilink target to a relative href from the current page.
+ * Wikilinks are resolved from the vault/workspace root, so we compute
+ * a relative path from the current page's directory to the target.
+ */
+function resolveWikilinkHref(target: string, env: any): string {
+  // Try to get the current page path from the environment
+  let currentPage = '';
+  if (env?.currentDocument?._fsPath) {
+    currentPage = env.currentDocument._fsPath;
+  } else if (env?.resource?.fsPath) {
+    currentPage = env.resource.fsPath;
+  }
+
+  if (!currentPage) return target;
+
+  // Get the workspace root
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  const rootPath = workspaceFolders?.[0]?.uri?.fsPath || '';
+
+  // Convert absolute paths to relative (from workspace root)
+  if (rootPath && currentPage.startsWith(rootPath)) {
+    currentPage = currentPage.slice(rootPath.length).replace(/^[\\/]/, '');
+  }
+
+  // Compute relative path from currentPage's directory to target
+  const currentDir = currentPage.replace(/[/\\][^/\\]*$/, '');
+  if (!currentDir) return target;
+
+  const currentParts = currentDir.split('/');
+  const targetParts = target.split('/');
+
+  // Find common prefix
+  let i = 0;
+  while (i < currentParts.length && i < targetParts.length && currentParts[i] === targetParts[i]) {
+    i++;
+  }
+
+  const ups = currentParts.length - i;
+  const downs = targetParts.slice(i);
+  const prefix = ups > 0 ? '../'.repeat(ups) : './';
+  return prefix + downs.join('/');
+}
+
+/**
+ * Scan inline token trees for `(key:: value)` patterns and replace them
+ * with `html_inline` tokens showing only the value. This runs as a core
+ * rule after all inline parsing is complete.
+ */
+function processInlineTokensForHiddenFields(tokens: any[], re: RegExp): void {
+  for (const token of tokens) {
+    if (token.type === 'inline' && token.children) {
+      const newChildren: any[] = [];
+      for (const child of token.children) {
+        if (child.type === 'text' && typeof child.content === 'string') {
+          newChildren.push(...splitTextByHiddenFields(child, re));
+        } else {
+          newChildren.push(child);
+          if (child.children) {
+            processInlineTokensForHiddenFields(child.children, re);
+          }
+        }
+      }
+      token.children = newChildren;
+    } else if (token.children) {
+      processInlineTokensForHiddenFields(token.children, re);
+    }
+  }
+}
+
+function splitTextByHiddenFields(textToken: any, re: RegExp): any[] {
+  const result: any[] = [];
+  const content: string = textToken.content;
+  let lastIndex = 0;
+
+  // Reset regex state
+  re.lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(content)) !== null) {
+    // Text before the match
+    if (match.index > lastIndex) {
+      const beforeText = content.slice(lastIndex, match.index);
+      if (beforeText) {
+        result.push({ ...textToken, content: beforeText });
+      }
+    }
+
+    // The hidden field: show only the value
+    const value = match[2].trim();
+    result.push({
+      type: 'html_inline',
+      tag: '',
+      level: 0,
+      content: '<span class="dataview-inline-field">' + escapeHtmlInline(value) + '</span>',
+      children: null,
+    });
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Remaining text after the last match
+  if (lastIndex < content.length) {
+    result.push({ ...textToken, content: content.slice(lastIndex) });
+  }
+
+  return result;
 }

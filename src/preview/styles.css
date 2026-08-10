@@ -345,6 +345,11 @@
   font-size: 0.9em;
 }
 
+.dataview-inline-key {
+  color: var(--vscode-descriptionForeground, #717171);
+  font-style: italic;
+}
+
 /* ─── Result Count ───────────────────────────────────────── */
 
 .dataview-result-count {
