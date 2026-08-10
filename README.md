@@ -7,14 +7,14 @@ Query your workspace's Markdown notes using **DQL (Dataview Query Language)** �
 ## Features
 
 - 🔍 **Automatic indexing** of all Markdown files with live-updating
-- 📊 **TABLE queries** with custom columns, sorting, `GROUP BY`, and `FLATTEN`
+- 📊 **TABLE queries** with custom columns, sorting, `GROUP BY`, `FLATTEN`, and aggregate functions (`sum`/`average`/`min`/`max`/`length(rows)`) with automatic summary rows
 - 📋 **LIST queries** with optional extra fields
 - ✅ **TASK queries** across all files, with due dates and emoji shorthands (🗓️ ✅ ⏳ 🛫)
 - 📅 **CALENDAR view** for date-based data
 - 🧮 **Inline expressions** — `` `= this.file.name` `` renders current page metadata
 - 🏷️ **Inline fields** — `[key:: value]` and `key:: value` syntax, with visual rendering
 - 🧩 **DataviewJS** support (optional, with trusted-path security control)
-- 📦 **60+ built-in functions** — date, string, list, math, logic operations
+- 📦 **70+ built-in functions** — date, string, list, math, logic operations
 - 🏷️ **Full metadata support**: YAML frontmatter, tags, wikilinks, implicit fields
 - ⚡ **Parallel indexing** — 8x concurrent file processing for large workspaces
 
@@ -62,6 +62,22 @@ LIMIT 20
 - `FLATTEN` — expand array fields into multiple rows
 - `LIMIT` — restrict result count
 
+### Aggregate Queries
+
+Aggregate functions collapse the matched rows into a single summary row (or per-group rows with `GROUP BY`). Multi-line column lists are supported:
+
+````markdown
+```dataview
+TABLE WITHOUT ID
+  sum(file.tasks.length) AS "Total Tasks",
+  average(budget) AS "Avg Budget",
+  min(budget) AS "Min Budget",
+  max(budget) AS "Max Budget",
+  length(rows) AS "Projects"
+FROM #project
+```
+````
+
 ### Inline Expressions
 
 Use backtick-wrapped expressions in your prose:
@@ -105,6 +121,16 @@ dv.table(["Name", "Created"], dv.pages("#project")
 ```
 ````
 
+Use `dv.span()` / `dv.paragraph()` to append formatted text (inline markdown such as `**bold**` is rendered):
+
+````markdown
+```dataviewjs
+const projects = dv.pages("#project");
+dv.span("**Projects:** " + projects.length);
+dv.paragraph("Total budget: " + projects.array().reduce((s, p) => s + (p.budget || 0), 0));
+```
+````
+
 > ⚠️ **Security Warning**: DataviewJS runs arbitrary JavaScript from your notes in the Markdown preview. Only enable if you trust all content in your workspace.
 
 ## Configuration
@@ -134,6 +160,16 @@ dv.table(["Name", "Created"], dv.pages("#project")
 - TASK queries are read-only (checking a task in the preview does not modify the source file)
 - Link dereferencing (`[[Page]].field`) is limited to indexed pages
 - Very large workspaces (10,000+ files) may experience slower indexing on startup
+
+## Development
+
+```sh
+npm test          # type-check + run the automated test suite
+npm run build     # type-check + bundle extension & preview
+npm run package   # create the .vsix
+```
+
+The suite covers the parser, expression engine, query engine (integration against the real `test/` vault), and markdown-it plugin rendering. Standalone debug harnesses (`scripts/debug-query.ts`, `scripts/debug-links.ts`) run the real parser/engine without launching VS Code.
 
 ## License
 

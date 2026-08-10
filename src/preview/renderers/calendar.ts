@@ -172,7 +172,9 @@ function extractDateString(value: any): string | null {
   }
 
   if (value.type === 'date') {
-    return (value.value || '').split('T')[0] || null;
+    // SDate values are `YYYY-MM-DD HH:mm:ss` (space separator, not 'T')
+    const m = String(value.value || '').match(/^(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : null;
   }
 
   return null;

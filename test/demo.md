@@ -257,4 +257,4 @@ Tasks support emoji date shorthands, queryable via Dataview TASK queries:
 
 ---
 
-*See also: [README](README.md) for extension usage documentation.*
+*See also: [README](../README.md) for extension usage documentation.*

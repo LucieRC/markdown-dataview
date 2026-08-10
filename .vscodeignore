@@ -6,9 +6,12 @@ test/**
 tsconfig.json
 esbuild.js
 esbuild-preview.js
-esbuild-notebook.js
+dist/notebook.js
 .gitignore
 .vscodeignore
 README.md
 images/**
 !images/icon.png
+scripts/**
+AGENTS.md
+*.vsix

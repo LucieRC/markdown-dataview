@@ -45,9 +45,20 @@ export class IndexerService {
     }
   }
 
-  /** Get a page by path */
+  /** Get a page by exact path */
   getPage(filePath: string): PageMetadata | undefined {
     return this.index.pages.get(normalizePath(filePath));
+  }
+
+  /**
+   * Resolve a page by path or wikilink target, using Obsidian-style filename
+   * resolution: an exact path wins; otherwise the unique page whose basename
+   * matches the target (ignoring folder, extension, and `#subpath`).
+   */
+  resolvePage(target: string): PageMetadata | undefined {
+    const key = this.resolveLinkTarget(target);
+    if (!key) return undefined;
+    return this.index.pages.get(key);
   }
 
   /** Get all pages */
@@ -65,14 +76,29 @@ export class IndexerService {
   /** Get pages in a specific folder (recursive) */
   getPagesByFolder(folder: string): PageMetadata[] {
     const normalized = normalizePath(folder);
-    return this.getAllPages().filter(
+    const direct = this.getAllPages().filter(
       p => p.file.folder === normalized || p.file.folder.startsWith(normalized + '/')
     );
+    if (direct.length > 0) return direct;
+
+    // Fallback: the workspace root may be a parent of the vault root (e.g. the
+    // dev host opens `test/` but the vault lives in `test/obsidian-dataview-test-vult/`).
+    // When the strict prefix match finds nothing, match pages whose folder path
+    // *ends* with the queried folder so `FROM "recipes"` still works.
+    const suffix = normalized.split('/').filter(Boolean);
+    if (suffix.length === 0) return [];
+    return this.getAllPages().filter(p => {
+      const segs = p.file.folder.split('/');
+      if (segs.length < suffix.length) return false;
+      return segs.slice(-suffix.length).join('/') === suffix.join('/');
+    });
   }
 
-  /** Get pages that link to a given page */
+  /** Get pages that link to a given page (includes dangling/unresolved links) */
   getInlinks(filePath: string): PageMetadata[] {
-    const paths = this.index.inlinks.get(normalizePath(filePath));
+    const key = this.resolveLinkKey(filePath);
+    if (!key) return [];
+    const paths = this.index.inlinks.get(key);
     if (!paths) return [];
     return [...paths].map(p => this.index.pages.get(p)).filter(Boolean) as PageMetadata[];
   }
@@ -174,25 +200,62 @@ export class IndexerService {
   private buildInlinkIndex(): void {
     for (const [pagePath, page] of this.index.pages) {
       for (const link of page.file.outlinks) {
-        // Try matching with and without .md extension
-        const linkPath = normalizePath(link.path);
-        const candidates = [
-          linkPath,
-          linkPath + '.md',
-          linkPath.replace(/\.md$/, ''),
-        ];
-
-        for (const candidate of candidates) {
-          if (this.index.pages.has(candidate)) {
-            if (!this.index.inlinks.has(candidate)) {
-              this.index.inlinks.set(candidate, new Set());
-            }
-            this.index.inlinks.get(candidate)!.add(pagePath);
-            break;
+        const target = this.resolveLinkKey(link.path);
+        if (target) {
+          if (!this.index.inlinks.has(target)) {
+            this.index.inlinks.set(target, new Set());
           }
+          this.index.inlinks.get(target)!.add(pagePath);
         }
       }
     }
+  }
+
+  /**
+   * Resolve a wikilink target / path to a canonical page key.
+   * 1. Exact path match (with or without `.md`).
+   * 2. Unique basename match anywhere in the vault (Obsidian-style), so
+   *    `[[Non-Fiction]]` finds `some/folder/Non-Fiction.md`.
+   * Subpaths ("File#heading") are ignored for file-level resolution.
+   */
+  private resolveLinkTarget(target: string): string | undefined {
+    const raw = normalizePath(target).split('#')[0].trim();
+    if (!raw) return undefined;
+
+    const candidates = [
+      raw,
+      raw + '.md',
+      raw.endsWith('.md') ? raw.slice(0, -3) : raw,
+    ];
+    for (const c of candidates) {
+      if (this.index.pages.has(c)) return c;
+    }
+
+    // Fall back to basename lookup across the vault (unique match only).
+    const base = raw.split('/').pop()!.toLowerCase();
+    const baseNoExt = base.endsWith('.md') ? base.slice(0, -3) : base;
+    const matches = this.getAllPages().filter(
+      p => p.file.name.toLowerCase() === baseNoExt
+    );
+    if (matches.length === 1) return matches[0].file.path;
+    return undefined;
+  }
+
+  /**
+   * Resolve a wikilink target to the canonical key used for inlink bookkeeping.
+   * When the target resolves to a real page, that page's key is used; otherwise
+   * it falls back to a normalized dangling-link key (lowercased, no `.md`), so
+   * `FROM [[X]]` still returns pages that link to `X` even when `X.md` does not
+   * exist — matching Obsidian Dataview, which tracks unresolved links too.
+   */
+  private resolveLinkKey(target: string): string {
+    const resolved = this.resolveLinkTarget(target);
+    if (resolved) return resolved;
+
+    const raw = normalizePath(target).split('#')[0].trim();
+    if (!raw) return '';
+    const noExt = raw.endsWith('.md') ? raw.slice(0, -3) : raw;
+    return noExt.toLowerCase();
   }
 
   private async reindexFile(fsPath: string, relativePath: string): Promise<void> {

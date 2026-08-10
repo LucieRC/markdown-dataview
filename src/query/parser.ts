@@ -97,6 +97,19 @@ export class QueryParser {
         .replace(/\bWITHOUT\s+ID\b/i, '')
         .trim();
 
+      // Multi-line TABLE: column definitions may continue on the following
+      // lines (e.g. `TABLE ...\n  col1 AS "A",\n  col2 AS "B"\nFROM ...`).
+      // Keep consuming lines until a clause keyword (FROM/WHERE/SORT/GROUP
+      // BY/FLATTEN/LIMIT) is found.
+      const clauseRe = /^\s*(FROM|WHERE|SORT|GROUP\s+BY|FLATTEN|LIMIT)\b/i;
+      while (
+        this.pos + 1 < this.lines.length &&
+        !clauseRe.test(this.lines[this.pos + 1])
+      ) {
+        columnStr = (columnStr ? columnStr + ' ' : '') + this.lines[this.pos + 1].trim();
+        this.pos++;
+      }
+
       if (columnStr.length > 0) {
         columns = this.parseColumns(columnStr);
       }

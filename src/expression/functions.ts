@@ -152,13 +152,15 @@ register('ceil', (args) => Math.ceil(toNumber(args[0])));
 register('abs', (args) => Math.abs(toNumber(args[0])));
 
 register('min', (args) => {
-  if (args.length === 0) return null;
-  return Math.min(...args.map(toNumber));
+  const vals = args.length === 1 && Array.isArray(args[0]) ? (args[0] as DataValue[]) : args;
+  if (vals.length === 0) return null;
+  return Math.min(...vals.map(toNumber));
 });
 
 register('max', (args) => {
-  if (args.length === 0) return null;
-  return Math.max(...args.map(toNumber));
+  const vals = args.length === 1 && Array.isArray(args[0]) ? (args[0] as DataValue[]) : args;
+  if (vals.length === 0) return null;
+  return Math.max(...vals.map(toNumber));
 });
 
 register('sum', (args) => {

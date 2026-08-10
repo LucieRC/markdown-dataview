@@ -42,6 +42,18 @@ export class QueryEngine {
       });
     }
 
+    // 3.5 Aggregate without GROUP BY: if any column uses an aggregate
+    // function, collapse the filtered rows into a single summary row that
+    // carries the full row set under `rows` (e.g. `TABLE sum(x), length(rows)`).
+    if (!groupBy && header.columns && header.columns.some(c => containsAggregate(c.field))) {
+      const allRows = rows;
+      const summary = {
+        rows: allRows as unknown as DataValue,
+        _page: allRows[0]?._page,
+      } as QueryResultRow;
+      rows = [summary];
+    }
+
     // 4. Apply SORT
     if (sort && sort.length > 0) {
       rows = this.applySort(rows, sort);
@@ -159,15 +171,15 @@ export class QueryEngine {
       case 'folder':
         return this.indexer.getPagesByFolder(source.value);
       case 'file':
-        return this.indexer.getPage(source.value) ? [this.indexer.getPage(source.value)!] : [];
+        return this.indexer.resolvePage(source.value) ? [this.indexer.resolvePage(source.value)!] : [];
       case 'link':
         return this.indexer.getInlinks(source.value);
       case 'outgoingLink': {
         // Pages linked FROM the specified page
-        const page = this.indexer.getPage(source.value);
+        const page = this.indexer.resolvePage(source.value);
         if (!page) return [];
         return page.file.outlinks
-          .map(l => this.indexer.getPage(l.path) || this.indexer.getPage(l.path + '.md'))
+          .map(l => this.indexer.resolvePage(l.path))
           .filter(Boolean) as PageMetadata[];
       }
       default:
@@ -367,6 +379,41 @@ export class QueryEngine {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────
+
+/** Aggregate function names that always collapse a query to a summary row. */
+const AGGREGATE_FN_NAMES = new Set([
+  'sum', 'average', 'avg', 'min', 'max', 'count', 'any', 'all', 'join', 'total',
+]);
+
+/**
+ * Whether an expression contains an aggregate function call.
+ * `length(rows)` is aggregate; `length(file.name)` is not (per-row).
+ */
+function containsAggregate(expr: Expression): boolean {
+  if (!expr) return false;
+  switch (expr.type) {
+    case 'functionCall': {
+      const n = expr.name.toLowerCase();
+      if (AGGREGATE_FN_NAMES.has(n)) return true;
+      if (
+        n === 'length' &&
+        expr.args[0]?.type === 'field' &&
+        (expr.args[0] as any).path.join('.') === 'rows'
+      ) {
+        return true;
+      }
+      return expr.args.some(containsAggregate);
+    }
+    case 'binaryOp':
+      return containsAggregate(expr.left) || containsAggregate(expr.right);
+    case 'unaryOp':
+      return containsAggregate(expr.operand);
+    case 'index':
+      return containsAggregate(expr.target) || containsAggregate(expr.index);
+    default:
+      return false;
+  }
+}
 
 /** Convert an expression to a human-readable field name */
 function expressionToFieldName(expr: Expression): string {

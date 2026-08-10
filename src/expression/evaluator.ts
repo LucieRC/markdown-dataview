@@ -71,6 +71,10 @@ function evaluateField(expr: ExprField, context: EvalContext): DataValue {
         }
       }
     } else if (Array.isArray(current)) {
+      // `array.length` → element count (matches JS/Obsidian semantics)
+      if (part === 'length') {
+        return current.length;
+      }
       // Array auto-mapping (swizzling): array.field → map each element
       const results: DataValue[] = [];
       for (const item of current) {
@@ -150,7 +154,34 @@ function evaluateUnaryOp(expr: ExprUnaryOp, context: EvalContext): DataValue {
 
 // ─── Function Calls ──────────────────────────────────────────────
 
+/** Function names that always aggregate over a set of rows. */
+const AGGREGATE_FUNCTIONS = new Set([
+  'sum', 'average', 'avg', 'min', 'max', 'count', 'any', 'all', 'join', 'total',
+]);
+
 function evaluateFunctionCall(expr: ExprFunctionCall, context: EvalContext): DataValue {
+  const rows = (context as any)?.rows;
+  const name = expr.name.toLowerCase();
+
+  // Aggregate functions evaluate their argument over every row when a `rows`
+  // array is available (summary row or group row). `length(rows)` counts the
+  // whole set instead of mapping per row.
+  if (Array.isArray(rows) && expr.args.length > 0) {
+    const isLengthRows =
+      name === 'length' &&
+      expr.args[0].type === 'field' &&
+      (expr.args[0] as any).path.join('.') === 'rows';
+    if (AGGREGATE_FUNCTIONS.has(name) || isLengthRows) {
+      const args = expr.args.map((a) => {
+        if (a.type === 'field' && (a as any).path.join('.') === 'rows') {
+          return rows;
+        }
+        return (rows as any[]).map((r) => evaluate(a, r));
+      });
+      return evaluateFunction(expr.name, args, context);
+    }
+  }
+
   const args = expr.args.map(a => evaluate(a, context));
   return evaluateFunction(expr.name, args, context);
 }

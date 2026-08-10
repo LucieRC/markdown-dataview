@@ -12,6 +12,7 @@ import { renderTable } from './renderers/table';
 import { renderList } from './renderers/list';
 import { renderTaskList } from './renderers/task';
 import { renderCalendar } from './renderers/calendar';
+import { renderInlineMarkdown } from './markdown';
 
 // ─── Types ────────────────────────────────────────────────────────
 
@@ -279,6 +280,24 @@ function createDataviewAPI(config: DataviewJSConfig): any {
       target.innerHTML = html;
     },
 
+    /** Render an inline span (appends to the container; supports inline markdown) */
+    span(text: any, container?: HTMLElement): void {
+      const target = container || currentDataviewJSContainer;
+      if (!target) return;
+      const el = document.createElement('span');
+      el.innerHTML = renderInlineMarkdown(String(text ?? ''));
+      target.appendChild(el);
+    },
+
+    /** Render a paragraph block (appends to the container; supports markdown) */
+    paragraph(text: any, container?: HTMLElement): void {
+      const target = container || currentDataviewJSContainer;
+      if (!target) return;
+      const el = document.createElement('p');
+      el.innerHTML = renderInlineMarkdown(String(text ?? ''));
+      target.appendChild(el);
+    },
+
     /** Create a date object */
     date(value: string): any {
       const d = new Date(value);
@@ -311,6 +330,8 @@ function createDataviewAPI(config: DataviewJSConfig): any {
 function createDataArray(items: any[]): any {
   const handler: ProxyHandler<any[]> = {
     get(target: any[], prop: string | symbol) {
+      // Custom DataArray methods take priority so .map()/.sort()/etc. work
+      if (typeof prop === 'string' && prop in methods) return methods[prop];
       if (prop in target) {
         return (target as any)[prop];
       }
@@ -375,16 +396,11 @@ function createDataArray(items: any[]): any {
     },
     first: () => array[0] ?? null,
     last: () => array[array.length - 1] ?? null,
+    /** Return the plain JS array (no DataArray wrapper). */
+    array: () => array,
   };
 
-  const proxied = new Proxy(array, handler);
-  for (const [name, fn] of Object.entries(methods)) {
-    (proxied as any)[name] = fn;
-  }
-  (proxied as any).length = array.length;
-  (proxied as any).values = array;
-
-  return proxied;
+  return new Proxy(array, handler);
 }
 
 // ─── Helper Functions ─────────────────────────────────────────────
@@ -428,6 +444,8 @@ function formatValue(val: any): string {
   }
   return String(val);
 }
+
+
 
 /** Render a value as HTML for dv.table() / dv.list() output, with clickable links */
 function renderDvValue(val: any): string {

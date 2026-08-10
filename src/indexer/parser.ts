@@ -394,8 +394,9 @@ export function parseMarkdownPage(
     }
   }
 
-  // Extract links from body
-  const outlinks = extractLinks(body);
+  // Extract links from body (excluding code blocks to avoid false positives,
+  // e.g. `[[X]]` inside a dataview query fence should not be an outlink)
+  const outlinks = extractLinks(stripCodeBlocks(body));
 
   // Extract aliases from frontmatter
   const aliases: string[] = [];
