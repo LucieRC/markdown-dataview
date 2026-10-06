@@ -1,9 +1,9 @@
 {
-  "name": "markdown-dataview",
+  "name": "markdown-dataview-lucie",
   "displayName": "Dataview — Query Your Notes",
   "description": "Bring Obsidian Dataview to VS Code. Query Markdown notes with DQL (TABLE, LIST, TASK, CALENDAR), inline expressions, and DataviewJS — right in the built-in preview.",
-  "version": "1.0.3",
-  "publisher": "walkeemon",
+  "version": "1.0.4.1",
+  "publisher": "lucierc",
   "license": "MIT",
   "repository": {
     "type": "git",
