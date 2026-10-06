@@ -48,3 +48,28 @@ test('real indexer + engine: aggregate query produces a summary row', () => {
   assert.equal(r.data[0]['Avg'], 100000);
   assert.equal(r.data[0]['N'], 2);
 });
+
+test('real indexer: file.inlinks lists the pages that link to a page', () => {
+  const meeting = indexer.resolvePage('meeting-2026-08-01')!;
+  const sources = meeting.file.inlinks.map(l => l.path);
+  assert.ok(sources.some(p => p.includes('project-alpha')), `got ${JSON.stringify(sources)}`);
+});
+
+test('real indexer: a removed link no longer shows up as an inlink', () => {
+  const alpha = indexer.resolvePage('project-alpha')!;
+  const saved = alpha.file.outlinks;
+  try {
+    alpha.file.outlinks = [];
+    (indexer as any).buildInlinkIndex();
+    const meeting = indexer.resolvePage('meeting-2026-08-01')!;
+    assert.ok(!meeting.file.inlinks.some(l => l.path.includes('project-alpha')));
+    assert.equal(engineCount('LIST FROM [[meeting-2026-08-01]]'), 0);
+  } finally {
+    alpha.file.outlinks = saved;
+    (indexer as any).buildInlinkIndex();
+  }
+});
+
+function engineCount(q: string): number {
+  return new QueryEngine(indexer as any).execute(parseQuery(q)).totalCount;
+}

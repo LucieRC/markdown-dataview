@@ -198,6 +198,12 @@ export class IndexerService {
   }
 
   private buildInlinkIndex(): void {
+    // Rebuild from scratch so links removed since the last pass do not linger
+    this.index.inlinks.clear();
+    for (const page of this.index.pages.values()) {
+      page.file.inlinks = [];
+    }
+
     for (const [pagePath, page] of this.index.pages) {
       for (const link of page.file.outlinks) {
         const target = this.resolveLinkKey(link.path);
@@ -208,6 +214,13 @@ export class IndexerService {
           this.index.inlinks.get(target)!.add(pagePath);
         }
       }
+    }
+
+    // Expose the inlinks on each page so `file.inlinks` works in queries and DataviewJS
+    for (const [target, sources] of this.index.inlinks) {
+      const page = this.index.pages.get(target);
+      if (!page) continue;
+      page.file.inlinks = [...sources].map(src => this.index.pages.get(src)!.file.link);
     }
   }
 
